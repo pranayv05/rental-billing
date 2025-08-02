@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rental Business Data Entry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center min-h-screen">
+  <div class="bg-white/95 p-8 rounded-2xl shadow-2xl w-full max-w-lg border-2 border-blue-500">
+    <h2 class="text-3xl font-extrabold mb-6 text-center text-blue-800">Rental Order Entry</h2>
+    <form id="rentalForm" class="space-y-4">
+      
+      <!-- Customer Info -->
+      <div>
+        <label for="customerName" class="block text-sm font-semibold text-blue-700">Customer Name</label>
+        <input type="text" id="customerName" name="customerName" required
+               class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600" />
+      </div>
+
+      <div>
+        <label for="siteAddress" class="block text-sm font-semibold text-blue-700">Customer Site Address</label>
+        <textarea id="siteAddress" name="siteAddress" rows="2" required
+                  class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600"></textarea>
+      </div>
+
+      <div>
+        <label for="phoneNumber" class="block text-sm font-semibold text-blue-700">Phone Number</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" required
+               class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600" />
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="pickupDate" class="block text-sm font-semibold text-blue-700">Pickup Date</label>
+          <input type="date" id="pickupDate" name="pickupDate" required
+                 class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600" />
+        </div>
+        <div>
+          <label for="returnDate" class="block text-sm font-semibold text-blue-700">Return Date</label>
+          <input type="date" id="returnDate" name="returnDate" required
+                 class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600" />
+        </div>
+      </div>
+
+      <!-- Brass Qty -->
+      <div>
+        <label for="brassQty" class="block text-sm font-semibold text-blue-700">Quantity (in Brass)</label>
+        <input type="number" id="brassQty" name="brassQty" min="0" step="0.01" required
+               class="mt-1 block w-full px-4 py-2 border-2 border-blue-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-600"
+               oninput="calculateUnits()" />
+      </div>
+
+      <!-- Auto Calculated Items -->
+      <div class="grid grid-cols-3 gap-4 text-blue-800 font-semibold">
+        <div>
+          <label class="block text-sm font-semibold">तराफ़े</label>
+          <input type="number" id="taraafe" name="taraafe" readonly
+                 class="mt-1 block w-full px-3 py-2 bg-blue-100 border border-blue-400 rounded-xl text-center" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold">बल्ली</label>
+          <input type="number" id="balli" name="balli" readonly
+                 class="mt-1 block w-full px-3 py-2 bg-blue-100 border border-blue-400 rounded-xl text-center" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold">चाबी</label>
+          <input type="number" id="chabi" name="chabi" readonly
+                 class="mt-1 block w-full px-3 py-2 bg-blue-100 border border-blue-400 rounded-xl text-center" />
+        </div>
+      </div>
+
+      <!-- Total Price -->
+      <div>
+        <label for="totalPrice" class="block text-sm font-semibold text-blue-700">Total Price (₹)</label>
+        <input type="number" id="totalPrice" name="totalPrice" readonly
+               class="mt-1 block w-full px-4 py-2 bg-blue-100 border border-blue-400 rounded-xl text-center font-bold text-blue-900" />
+      </div>
+
+      <!-- Submit -->
+      <div class="pt-4 flex gap-2">
+        <button type="submit"
+                class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-900 transition duration-200 shadow-lg">
+          Submit & Bill
+        </button>
+        <button type="button" onclick="downloadCSV()"
+                class="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-800 shadow-lg">
+          Download CSV
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bill Modal -->
+  <div id="billModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-96 text-gray-700 relative border-t-8 border-blue-700">
+      <h2 class="text-xl font-bold mb-4 text-center text-blue-800">Rental Bill</h2>
+      <div id="billContent" class="text-sm space-y-2"></div>
+      <div class="mt-4 flex justify-between">
+        <button onclick="printBill()" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">Print</button>
+        <button onclick="closeBill()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let orders = []; // store all entries
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3bAXXeLiGhG8sNO7xI4pu2x62vCdJZ6Uca8sbBbPUCX4d2yriB2hb9nnVOpOIDBwl/exec";
+
+    function calculateUnits() {
+      const brassQty = parseFloat(document.getElementById("brassQty").value) || 0;
+      const pricePerBrass = 800;
+
+      document.getElementById("taraafe").value = brassQty * 16;
+      document.getElementById("balli").value = brassQty * 16;
+      document.getElementById("chabi").value = brassQty * 4;
+      document.getElementById("totalPrice").value = (brassQty * pricePerBrass).toFixed(2);
+    }
+
+    const form = document.getElementById("rentalForm");
+    const billModal = document.getElementById("billModal");
+    const billContent = document.getElementById("billContent");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const data = {
+        customerName: form.customerName.value,
+        siteAddress: form.siteAddress.value,
+        phoneNumber: form.phoneNumber.value,
+        pickupDate: form.pickupDate.value,
+        returnDate: form.returnDate.value,
+        brassQty: form.brassQty.value,
+        taraafe: form.taraafe.value,
+        balli: form.balli.value,
+        chabi: form.chabi.value,
+        totalPrice: form.totalPrice.value
+      };
+
+      // Save in memory for CSV
+      orders.push(data);
+
+      // Send to Google Sheet
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
+
+      // Show Bill
+      billContent.innerHTML = `
+        <p><strong>Customer:</strong> ${data.customerName}</p>
+        <p><strong>Phone:</strong> ${data.phoneNumber}</p>
+        <p><strong>Address:</strong> ${data.siteAddress}</p>
+        <p><strong>Pickup:</strong> ${data.pickupDate}</p>
+        <p><strong>Return:</strong> ${data.returnDate}</p>
+        <hr>
+        <p><strong>Brass Qty:</strong> ${data.brassQty}</p>
+        <p>तराफ़े: ${data.taraafe}, बल्ली: ${data.balli}, चाबी: ${data.chabi}</p>
+        <p class="font-bold text-lg mt-2">Total Price: ₹${data.totalPrice}</p>
+        <p class="text-xs text-gray-500 mt-2">Generated on ${new Date().toLocaleString()}</p>
+      `;
+
+      billModal.classList.remove("hidden");
+      form.reset();
+    });
+
+    function printBill() {
+      const printWindow = window.open('', '', 'height=500,width=400');
+      printWindow.document.write('<html><head><title>Rental Bill</title></head><body>');
+      printWindow.document.write(billContent.innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    function closeBill() {
+      billModal.classList.add("hidden");
+    }
+
+    function downloadCSV() {
+      let csv = "Customer,Phone,Address,Pickup Date,Return Date,Brass Qty,तराफ़े,बल्ली,चाबी,Total Price\n";
+      orders.forEach(o => {
+        csv += `${o.customerName},${o.phoneNumber},${o.siteAddress},${o.pickupDate},${o.returnDate},${o.brassQty},${o.taraafe},${o.balli},${o.chabi},${o.totalPrice}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'rental_orders.csv';
+      link.click();
+    }
+  </script>
+</body>
+</html>
